@@ -218,7 +218,7 @@ func TestGetGeoSpeed(t *testing.T) {
 			},
 			expectedStatusCode: http.StatusBadRequest,
 			expectedError:      true,
-			errorContains:      "malformed latitude",
+			errorContains:      "malformed longitude",
 		},
 		{
 			name: "invalid latitude format",
