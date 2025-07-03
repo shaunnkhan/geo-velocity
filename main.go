@@ -14,24 +14,24 @@ import (
 )
 
 func main() {
-	// read environment variables
-	// address port, default max travel speed, and unit of speed (mph & km/h)
+	// Read optional command line flags
 	var addr = flag.String("addr", ":8080", "server port")
-	var maxSpeed = flag.Float64("max-speed", 0.0, "a default max allowed speed")
+	var maxSpeed = flag.Float64("max-speed", 880.0, "a default max allowed speed")
 	var unit = flag.String("unit", "km/h", "unit of speed as mph or km/h")
+	flag.Parse()
 
-	// setup logger
+	// Setup logger
 	logger := slog.New(slog.NewJSONHandler(os.Stdout, &slog.HandlerOptions{
 		AddSource: false,
 	}))
 
-	// new up handler & register http routes
-	geoHandler := geo.NewGeoHandler(*maxSpeed, *unit, geo.NewMockRepository())
+	// New up handler & register http routes
+	geoHandler := geo.NewGeoHandler(*maxSpeed, *unit, geo.NewMockRepository(), logger)
 
 	mux := http.NewServeMux()
 	geoHandler.RegisterRoutes(mux)
 
-	// create server
+	// Create server
 	srv := &http.Server{
 		Addr:         *addr,
 		Handler:      mux,
@@ -40,7 +40,7 @@ func main() {
 		IdleTimeout:  60 * time.Second,
 	}
 
-	// start server
+	// Start server
 	go func() {
 		logger.Info("starting server", "addr", *addr)
 		if err := srv.ListenAndServe(); err != nil && err != http.ErrServerClosed {
@@ -49,7 +49,7 @@ func main() {
 		}
 	}()
 
-	// setup interrupt signal shutdown
+	// Setup interrupt signal shutdown
 	ctx, stop := signal.NotifyContext(context.Background(), syscall.SIGINT, syscall.SIGTERM)
 	defer stop()
 
