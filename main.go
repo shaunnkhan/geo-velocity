@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"flag"
 	"log/slog"
 	"net/http"
 	"os"
@@ -14,6 +15,10 @@ import (
 
 func main() {
 	// read environment variables
+	// address port, default max travel speed, and unit of speed (mph & km/h)
+	var addr = flag.String("addr", ":8080", "server port")
+	var maxSpeed = flag.Float64("max-speed", 0.0, "a default max allowed speed")
+	var unit = flag.String("unit", "km/h", "unit of speed as mph or km/h")
 
 	// setup logger
 	logger := slog.New(slog.NewJSONHandler(os.Stdout, &slog.HandlerOptions{
@@ -21,14 +26,14 @@ func main() {
 	}))
 
 	// new up handler & register http routes
-	geoHandler := geo.NewGeoHandler()
+	geoHandler := geo.NewGeoHandler(*maxSpeed, *unit, geo.NewMockRepository())
 
 	mux := http.NewServeMux()
 	geoHandler.RegisterRoutes(mux)
 
 	// create server
 	srv := &http.Server{
-		Addr:         ":8080",
+		Addr:         *addr,
 		Handler:      mux,
 		ReadTimeout:  15 * time.Second,
 		WriteTimeout: 15 * time.Second,
@@ -37,7 +42,7 @@ func main() {
 
 	// start server
 	go func() {
-		logger.Info("starting server", "addr", ":8080")
+		logger.Info("starting server", "addr", *addr)
 		if err := srv.ListenAndServe(); err != nil && err != http.ErrServerClosed {
 			logger.Error("server failed to start", "error", err)
 			os.Exit(1)
